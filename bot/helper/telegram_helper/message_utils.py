@@ -55,8 +55,7 @@ def editMessage(text: str, message: Message, reply_markup=None):
 def editCaption(text: str, message: Message, reply_markup=None):
     try:
         bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=text, 
-                              reply_markup=reply_markup, parse_mode='HTML',
-                              disable_web_page_preview=True)
+                              reply_markup=reply_markup, parse_mode='HTML')
     except RetryAfter as r:
         LOGGER.warning(str(r))
         sleep(r.retry_after * 1.5)
