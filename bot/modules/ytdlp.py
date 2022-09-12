@@ -22,7 +22,7 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
     mssg = message.text
     user_id = message.from_user.id
     msg_id = message.message_id
-    multi=1
+    multi = 0
     buttons = ButtonMaker()	
     if FSUB:
         try:
@@ -75,19 +75,19 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
         if link.strip().isdigit():
             multi = int(link)
             link = ''
-        elif link.strip().startswith(("|", "pswd:", "args:")):
+        elif link.strip().startswith(("|", "pswd:", "opt:")):
             link = ''
     else:
         link = ''
 
     name = mssg.split('|', maxsplit=1)
     if len(name) > 1:
-        if 'args: ' in name[0] or 'pswd: ' in name[0]:
+        if 'opt: ' in name[0] or 'pswd: ' in name[0]:
             name = ''
         else:
             name = name[1]
         if name != '':
-            name = re_split('pswd:|args:', name)[0]
+            name = re_split('pswd:|opt:', name)[0]
             name = name.strip()
     else:
         name = ''
@@ -95,15 +95,15 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
     pswd = mssg.split(' pswd: ')
     if len(pswd) > 1:
         pswd = pswd[1]
-        pswd = pswd.split(' args: ')[0]
+        pswd = pswd.split(' opt: ')[0]
     else:
         pswd = None
 
-    args = mssg.split(' args: ')
-    if len(args) > 1:
-        args = args[1]
+    opt = mssg.split(' opt: ')
+    if len(opt) > 1:
+        opt = opt[1]
     else:
-        args = None
+        opt = None
 
     if message.from_user.username:
         tag = f"@{message.from_user.username}"
@@ -121,10 +121,12 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
 
     if not is_url(link):
         help_msg = "<b>Send link along with command line:</b>"
-        help_msg += "\n<code>/command</code> {link} |newname pswd: mypassword [zip] args: x:y|x1:y1"
+        help_msg += "\n<code>/cmd</code> link |newname pswd: xx(zip) opt: x:y|x1:y1"
         help_msg += "\n\n<b>By replying to link:</b>"
-        help_msg += "\n<code>/command</code> |newname pswd: mypassword [zip] args: x:y|x1:y1"
-        help_msg += "\n\n<b>Args Example:</b> args: playliststart:^10|matchtitle:S13|writesubtitles:true"
+        help_msg += "\n<code>/cmd</code> |newname pswd: xx(zip) opt: x:y|x1:y1"
+        help_msg += "\n\n<b>Options Example:</b> opt: playliststart:^10|matchtitle:S13|writesubtitles:true"
+        help_msg += "\n\n<b>Multi links only by replying to first link:</b>"
+        help_msg += "\n<code>/cmd</code> 10(number of links). Number should be always before |newname, pswd: and opt:"
         help_msg += "\n\n<b>NOTE:</b> Add `^` before integer, some values must be integer and some string."
         help_msg += " Like playlist_items:10 works with string, so no need to add `^` before the number"
         help_msg += " but playlistend works only with integer so you must add `^` before the number like example above."
@@ -139,7 +141,7 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
     best_audio = "ba/b"
     ydl = YoutubeDLHelper(listener)
     try:
-        result = ydl.extractMetaData(link, name, args, True)
+        result = ydl.extractMetaData(link, name, opt, True)
     except Exception as e:
         msg = str(e).replace('<', ' ').replace('>', ' ')
         return sendMessage(tag + " " + msg, bot, message)
@@ -154,7 +156,7 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
         buttons.sbutton("Best Audios", f"qu {msg_id} {best_audio} t")
         buttons.sbutton("Cancel", f"qu {msg_id} cancel")
         YTBUTTONS = InlineKeyboardMarkup(buttons.build_menu(3))
-        listener_dict[msg_id] = [listener, user_id, link, name, YTBUTTONS, args]
+        listener_dict[msg_id] = [listener, user_id, link, name, YTBUTTONS, opt]
         bmsg = sendMarkup('Choose Playlist Videos Quality:', bot, message, YTBUTTONS)
     else:
         formats = result.get('formats')
@@ -181,19 +183,21 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
                     elif frmt.get('video_ext') == 'none' and frmt.get('acodec') != 'none':
                         b_name = f"{frmt['acodec']}-{frmt['ext']}"
                         v_format = f"ba[format_id={format_id}]"
+                    else:
+                        continue
 
                     if b_name in formats_dict:
-                        formats_dict[b_name][frmt['tbr']] = [size, v_format]
+                        formats_dict[b_name][str(frmt['tbr'])] = [size, v_format]
                     else:
                         subformat = {}
-                        subformat[frmt['tbr']] = [size, v_format]
+                        subformat[str(frmt['tbr'])] = [size, v_format]
                         formats_dict[b_name] = subformat
 
             for b_name, d_dict in formats_dict.items():
                 if len(d_dict) == 1:
-                    d_data = list(d_dict.values())[0]
-                    buttonName = f"{b_name} ({get_readable_file_size(d_data[0])})"
-                    buttons.sbutton(buttonName, f"qu {msg_id} {d_data[1]}")
+                    tbr, v_list = list(d_dict.items())[0]
+                    buttonName = f"{b_name} ({get_readable_file_size(v_list[0])})"
+                    buttons.sbutton(buttonName, f"qu {msg_id} {b_name}|{tbr}")
                 else:
                     buttons.sbutton(b_name, f"qu {msg_id} dict {b_name}")
         buttons.sbutton("MP3", f"qu {msg_id} mp3")
@@ -201,14 +205,16 @@ def _ytdl(bot, message, isZip=False, isLeech=False):
         buttons.sbutton("Best Audio", f"qu {msg_id} {best_audio}")
         buttons.sbutton("Cancel", f"qu {msg_id} cancel")
         YTBUTTONS = InlineKeyboardMarkup(buttons.build_menu(2))
-        listener_dict[msg_id] = [listener, user_id, link, name, YTBUTTONS, args, formats_dict]
+        listener_dict[msg_id] = [listener, user_id, link, name, YTBUTTONS, opt, formats_dict]
         bmsg = sendMarkup('Choose Video Quality:', bot, message, YTBUTTONS)
 
     Thread(target=_auto_cancel, args=(bmsg, msg_id)).start()
     if multi > 1:
         sleep(4)
         nextmsg = type('nextmsg', (object, ), {'chat_id': message.chat_id, 'message_id': message.reply_to_message.message_id + 1})
-        nextmsg = sendMessage(mssg.replace(str(multi), str(multi - 1), 1), bot, nextmsg)
+        ymsg = message.text.split(maxsplit=2)
+        ymsg[1] = f"{multi - 1}"
+        nextmsg = sendMessage(" ".join(ymsg), bot, nextmsg)
         nextmsg.from_user.id = message.from_user.id
         sleep(4)
         Thread(target=_ytdl, args=(bot, nextmsg, isZip, isLeech)).start()
@@ -219,7 +225,7 @@ def _qual_subbuttons(task_id, b_name, msg):
     formats_dict = task_info[6]
     for tbr, d_data in formats_dict[b_name].items():
         buttonName = f"{tbr}K ({get_readable_file_size(d_data[0])})"
-        buttons.sbutton(buttonName, f"qu {task_id} {d_data[1]}")
+        buttons.sbutton(buttonName, f"qu {task_id} {b_name}|{tbr}")
     buttons.sbutton("Back", f"qu {task_id} back")
     buttons.sbutton("Cancel", f"qu {task_id} cancel")
     SUBBUTTONS = InlineKeyboardMarkup(buttons.build_menu(2))
@@ -279,14 +285,17 @@ def select_format(update, context):
         listener = task_info[0]
         link = task_info[2]
         name = task_info[3]
-        args = task_info[5]
+        opt = task_info[5]
         qual = data[2]
         if len(data) == 4:
             playlist = True
         else:
             playlist = False
+        if not playlist and not qual.startswith('ba/b-'):
+            b_name, tbr = qual.split('|')
+            qual = task_info[6][b_name][tbr][1]
         ydl = YoutubeDLHelper(listener)
-        Thread(target=ydl.add_download, args=(link, f'{DOWNLOAD_DIR}{task_id}', name, qual, playlist, args)).start()
+        Thread(target=ydl.add_download, args=(link, f'{DOWNLOAD_DIR}{task_id}', name, qual, playlist, opt)).start()
         query.message.delete()
     del listener_dict[task_id]
 
