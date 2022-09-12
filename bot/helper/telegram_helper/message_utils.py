@@ -1,3 +1,4 @@
+from random import choice
 from time import sleep, time
 from telegram import InlineKeyboardMarkup
 from telegram.message import Message
@@ -208,8 +209,12 @@ def sendStatusMessage(msg, bot):
             message = status_reply_dict[msg.chat.id][0]
             deleteMessage(bot, message)
             del status_reply_dict[msg.chat.id]
-        if buttons == "":
+        if buttons == "" and PICS:
+            message = sendPhoto(progress, bot, msg, choice(PICS))
+        elif buttons == "" and (not PICS):
             message = sendMessage(progress, bot, msg)
+        elif PICS:
+            message = sendPhoto(progress, bot, msg, choice(PICS), buttons)
         else:
             message = sendMarkup(progress, bot, msg, buttons)
         status_reply_dict[msg.chat.id] = [message, time()]
