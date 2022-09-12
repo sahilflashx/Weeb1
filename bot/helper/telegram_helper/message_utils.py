@@ -187,7 +187,7 @@ def update_all_messages(force=False):
             if status_reply_dict[chat_id] and msg != status_reply_dict[chat_id][0].text:
                 if buttons == "" and PICS:
                     rmsg = editCaption(msg, status_reply_dict[chat_id][0])
-                elif buttons == "" and (not PICS):
+                elif buttons == "":
                     rmsg = editMessage(msg, status_reply_dict[chat_id][0])
                 elif PICS:
                     rmsg = editCaption(msg, status_reply_dict[chat_id][0], buttons)
@@ -210,7 +210,7 @@ def sendStatusMessage(msg, bot):
             del status_reply_dict[msg.chat.id]
         if buttons == "" and PICS:
             message = sendPhoto(progress, bot, msg, choice(PICS))
-        elif buttons == "" and (not PICS):
+        elif buttons == "":
             message = sendMessage(progress, bot, msg)
         elif PICS:
             message = sendPhoto(progress, bot, msg, choice(PICS), buttons)
