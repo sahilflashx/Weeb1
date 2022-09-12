@@ -50,6 +50,19 @@ def editMessage(text: str, message: Message, reply_markup=None):
         LOGGER.error(str(e))
         return str(e)
 
+def editCaption(text: str, message: Message, reply_markup=None):
+    try:
+        bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=text, 
+                              reply_markup=reply_markup, parse_mode='HTML',
+                              disable_web_page_preview=True)
+    except RetryAfter as r:
+        LOGGER.warning(str(r))
+        sleep(r.retry_after * 1.5)
+        return editMessage(text, message, reply_markup)
+    except Exception as e:
+        LOGGER.error(str(e))
+        return str(e)
+
 def sendRss(text: str, bot):
     if rss_session is None:
         try:
