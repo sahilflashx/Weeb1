@@ -6,7 +6,8 @@ from pyrogram.errors import FloodWait
 from os import remove
 
 from bot import AUTO_DELETE_MESSAGE_DURATION, LOGGER, status_reply_dict, status_reply_dict_lock, \
-                Interval, DOWNLOAD_STATUS_UPDATE_INTERVAL, RSS_CHAT_ID, bot, rss_session, AUTO_DELETE_UPLOAD_MESSAGE_DURATION
+                Interval, DOWNLOAD_STATUS_UPDATE_INTERVAL, RSS_CHAT_ID, bot, rss_session, \
+                AUTO_DELETE_UPLOAD_MESSAGE_DURATION, PICS
 from bot.helper.ext_utils.bot_utils import get_readable_message, setInterval
 
 
@@ -184,8 +185,12 @@ def update_all_messages(force=False):
     with status_reply_dict_lock:
         for chat_id in status_reply_dict:
             if status_reply_dict[chat_id] and msg != status_reply_dict[chat_id][0].text:
-                if buttons == "":
+                if buttons == "" and PICS:
+                    rmsg = editCaption(msg, status_reply_dict[chat_id][0])
+                elif buttons == "" and (not PICS):
                     rmsg = editMessage(msg, status_reply_dict[chat_id][0])
+                elif PICS:
+                    rmsg = editCaption(msg, status_reply_dict[chat_id][0], buttons)
                 else:
                     rmsg = editMessage(msg, status_reply_dict[chat_id][0], buttons)
                 if rmsg == "Message to edit not found":
