@@ -1,5 +1,7 @@
-from signal import signal, SIGINT
 import random
+from signal import signal, SIGINT
+from requests import get as rget
+from urllib.parse import quote as q
 from random import choice
 from os import path as ospath, remove as osremove, execl as osexecl
 from subprocess import run as srun, check_output
@@ -14,7 +16,8 @@ import pytz
 from bot import bot, dispatcher, updater, botStartTime, TIMEZONE, IGNORE_PENDING_REQUESTS, LOGGER, Interval, INCOMPLETE_TASK_NOTIFIER, \
                     DB_URI, alive, app, main_loop, HEROKU_API_KEY, HEROKU_APP_NAME, SET_BOT_COMMANDS, AUTHORIZED_CHATS, EMOJI_THEME, \
                     START_BTN1_NAME, START_BTN1_URL, START_BTN2_NAME, START_BTN2_URL, CREDIT_NAME, TITLE_NAME, PICS, FINISHED_PROGRESS_STR, UN_FINISHED_PROGRESS_STR, \
-                    SHOW_LIMITS_IN_STATS, LEECH_LIMIT, TORRENT_DIRECT_LIMIT, CLONE_LIMIT, MEGA_LIMIT, ZIP_UNZIP_LIMIT, TOTAL_TASKS_LIMIT, USER_TASKS_LIMIT
+                    SHOW_LIMITS_IN_STATS, LEECH_LIMIT, TORRENT_DIRECT_LIMIT, CLONE_LIMIT, MEGA_LIMIT, ZIP_UNZIP_LIMIT, TOTAL_TASKS_LIMIT, USER_TASKS_LIMIT, \
+                    PIXABAY_API_KEY, PIXABAY_CATEGORY, PIXABAY_SEARCH
 from .helper.ext_utils.fs_utils import start_cleanup, clean_all, exit_clean_up
 from .helper.ext_utils.telegraph_helper import telegraph
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time
@@ -173,7 +176,7 @@ def stats(update, context):
                     f'<b>├  Updated On: </b>{last_commit}\n'\
                     f'<b>├  Uptime: </b>{currentTime}\n'\
                     f'<b>├  OS Uptime: </b>{osUptime}\n'\
-                    f'<b>├  CPU usage:</b> [{progress_bar(cpuUsage)}] {cpuUsage}%\n'\
+                    f'<b>├  CPU:</b> [{progress_bar(cpuUsage)}] {cpuUsage}%\n'\
                     f'<b>├  RAM:</b> [{progress_bar(mem_p)}] {mem_p}%\n'\
                     f'<b>├  Disk:</b> [{progress_bar(disk)}] {disk}%\n'\
                     f'<b>├  Disk Free:</b> {free}\n'\
@@ -501,6 +504,18 @@ if SET_BOT_COMMANDS:
 
 
 def main():
+    if PIXABAY_API_KEY:
+        try:
+            PIXABAY_ENDPOINT = f"https://pixabay.com/api/?key={PIXABAY_API_KEY}&image_type=all&orientation=horizontal&min_width=1280&min_height=720&per_page=200&safesearch=true&editors_choice=true"
+            if PIXABAY_CATEGORY: PIXABAY_ENDPOINT += f"&category={PIXABAY_CATEGORY}"
+            if PIXABAY_SEARCH: PIXABAY_ENDPOINT += f"&q={q(PIXABAY_SEARCH)}"
+            resp = rget(PIXABAY_ENDPOINT)
+            jdata = resp.json()
+            for x in range(0, 200):
+                largeImageURL = jdata['hits'][x]['largeImageURL']
+                PICS.append(largeImageURL)
+        except Exception as err:
+            LOGGER.info(f"Pixabay API Error: {err}")
     if SET_BOT_COMMANDS:
         bot.set_my_commands(botcmds)
     start_cleanup()
@@ -514,14 +529,14 @@ def main():
                     with open(".restartmsg") as f:
                         chat_id, msg_id = map(int, f)
                     msg = f"😎Restarted successfully❗\n"
-                    msg += f" DATE: {date}\n"
-                    msg += f" TIME: {time}\n"
-                    msg += f" TIMEZONE: {TIMEZONE}\n"
+                    msg += f"📅DATE: {date}\n"
+                    msg += f"⌚TIME: {time}\n"
+                    msg += f"🌐TIMEZONE: {TIMEZONE}\n"
                 else:
-                    msg = f"Bot Restarted!\n"
-                    msg += f"DATE: {date}\n"
-                    msg += f"TIME: {time}\n"
-                    msg += f"TIMEZONE: {TIMEZONE}"
+                    msg = f"😎Bot Restarted!\n"
+                    msg += f"📅DATE: {date}\n"
+                    msg += f"⌚TIME: {time}\n"
+                    msg += f"🌐TIMEZONE: {TIMEZONE}"
 
                 for tag, links in data.items():
                      msg += f"\n{tag}: "

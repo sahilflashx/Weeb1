@@ -834,7 +834,24 @@ try:
     TELEGRAPH_STYLE = TELEGRAPH_STYLE.lower() == 'true'
 except:
     TELEGRAPH_STYLE = False
-
+try:
+    PIXABAY_API_KEY = getConfig('PIXABAY_API_KEY')
+    if len(PIXABAY_API_KEY) == 0:
+        raise KeyError
+except:
+    PIXABAY_API_KEY = None
+try:
+    PIXABAY_CATEGORY = getConfig('PIXABAY_CATEGORY')
+    if len(PIXABAY_CATEGORY) == 0:
+        raise KeyError
+except:
+    PIXABAY_CATEGORY = None
+try:
+    PIXABAY_SEARCH = getConfig('PIXABAY_SEARCH')
+    if len(PIXABAY_SEARCH) == 0:
+        raise KeyError
+except:
+    PIXABAY_SEARCH = None
 PICS = (environ.get('PICS', '')).split()
 
 updater = tgUpdater(token=BOT_TOKEN, request_kwargs={'read_timeout': 20, 'connect_timeout': 15})
